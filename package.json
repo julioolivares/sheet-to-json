@@ -1,0 +1,65 @@
+{
+  "name": "sheet-to-json",
+  "version": "1.0.0",
+  "description": "Event-driven streaming library to convert Excel (.xlsx) and CSV files into JSON objects row by row, with pause/resume/destroy flow control. Built for large files.",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "sheet-to-json": "dist/cli.mjs"
+  },
+  "scripts": {
+    "test": "tsx --test tests/**/*.test.ts",
+    "test:coverage": "tsx --test --experimental-test-coverage tests/**/*.test.ts",
+    "prettier": "prettier --write ./src/**/*.ts",
+    "dev": "tsx --watch src/run.ts",
+    "build": "rollup -c rollup.config.js --environment NODE_ENV:production",
+    "build:dev": "rollup -c rollup.config.js --environment NODE_ENV:development",
+    "prepublish": "pnpm build",
+    "postpublish": "git push --follow-tags"
+  },
+  "keywords": [
+    "excel",
+    "csv",
+    "xlsx",
+    "json",
+    "sheet-to-json",
+    "excel-to-json",
+    "csv-to-json",
+    "streaming",
+    "parser",
+    "reader",
+    "large-files",
+    "parse-excel-to-json",
+    "parse-csv-to-json",
+    "stream-excel-to-json",
+    "stream-csv-to-json",
+    "excel-streaming-parser",
+    "csv-streaming-parser",
+    "excel-reader",
+    "csv-reader",
+    "cli excel to json",
+    "cli csv to json",
+    "command line excel to json",
+    "command line csv to json"
+  ],
+  "author": "julioolivarestejeda@gmail.com",
+  "license": "MIT",
+  "packageManager": "pnpm@10.24.0",
+  "devDependencies": {
+    "@rollup/plugin-typescript": "12.3.0",
+    "@types/node": "25.3.5",
+    "prettier": "3.8.1",
+    "rollup": "4.59.0",
+    "rollup-plugin-dts": "6.3.0",
+    "tslib": "2.8.1",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "exceljs": "4.4.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
