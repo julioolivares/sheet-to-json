@@ -51,6 +51,14 @@
   "author": "julioolivarestejeda@gmail.com",
   "license": "MIT",
   "packageManager": "pnpm@10.24.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/julioolivares/sheet-to-json.git"
+  },
+  "bugs": {
+    "url": "https://github.com/julioolivares/sheet-to-json/issues"
+  },
+  "homepage": "https://github.com/julioolivares/sheet-to-json#readme",
   "devDependencies": {
     "@rollup/plugin-typescript": "12.3.0",
     "@types/node": "25.3.5",
