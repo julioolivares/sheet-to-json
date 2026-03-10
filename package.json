@@ -8,6 +8,11 @@
   "bin": {
     "sheet-to-json": "dist/cli.mjs"
   },
+  "files": [
+    "dist/*",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "tsx --test tests/**/*.test.ts",
     "test:coverage": "tsx --test --experimental-test-coverage tests/**/*.test.ts",
