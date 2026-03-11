@@ -4,16 +4,16 @@ import { fileURLToPath } from 'node:url'
 import { sheetToJson } from './readerStream'
 
 interface CliArgs {
-    path?: string
-    encoding?: BufferEncoding
-    headers?: Array<Array<string>>
-    includeFirstRow: boolean
-    output?: string
-    maxRows?: number
+  path?: string
+  encoding?: BufferEncoding
+  headers?: Array<Array<string>>
+  includeFirstRow: boolean
+  output?: string
+  maxRows?: number
 }
 
 function printHelp(): void {
-    console.log(`
+  console.log(`
   sheet-to-json - Convert Excel/CSV files to JSON
 
   Usage:
@@ -38,111 +38,111 @@ function printHelp(): void {
 }
 
 async function parseArgs(argv: string[]): Promise<CliArgs> {
-    const args: CliArgs = { includeFirstRow: false }
-    let i = 0
+  const args: CliArgs = { includeFirstRow: false }
+  let i = 0
 
-    while (i < argv.length) {
-        const arg = argv[i]
+  while (i < argv.length) {
+    const arg = argv[i]
 
-        switch (arg) {
-            case '-p':
-            case '--path':
-                args.path = argv[++i]
-                break
-            case '-e':
-            case '--encoding':
-                args.encoding = argv[++i] as BufferEncoding
-                break
-            case '-h':
-            case '--headers':
-                args.headers = [argv[++i].split(',').map((h) => h.trim())]
-                break
-            case '-i':
-            case '--include-first':
-                args.includeFirstRow = true
-                break
-            case '-n':
-            case '--number-rows':
-                args.maxRows = parseInt(argv[++i], 10)
-                break
-            case '-o':
-            case '--output':
-                args.output = argv[++i]
-                break
-            case '--help':
-                printHelp()
-                process.exit(0)
-                break
-            case '--version': {
-                const __dirname = dirname(fileURLToPath(import.meta.url))
-                const pkg = JSON.parse(await readFile(resolve(__dirname, '..', 'package.json'), 'utf-8'))
-                console.log(pkg.version)
-                process.exit(0)
-                break
-            }
-            default:
-                if (arg.startsWith('-')) {
-                    console.error(`Unknown option: ${arg}`)
-                    printHelp()
-                    process.exit(1)
-                } else if (!args.path) {
-                    args.path = arg
-                }
-                break
+    switch (arg) {
+      case '-p':
+      case '--path':
+        args.path = argv[++i]
+        break
+      case '-e':
+      case '--encoding':
+        args.encoding = argv[++i] as BufferEncoding
+        break
+      case '-h':
+      case '--headers':
+        args.headers = [argv[++i].split(',').map((h) => h.trim())]
+        break
+      case '-i':
+      case '--include-first':
+        args.includeFirstRow = true
+        break
+      case '-n':
+      case '--number-rows':
+        args.maxRows = parseInt(argv[++i], 10)
+        break
+      case '-o':
+      case '--output':
+        args.output = argv[++i]
+        break
+      case '--help':
+        printHelp()
+        process.exit(0)
+        break
+      case '--version': {
+        const __dirname = dirname(fileURLToPath(import.meta.url))
+        const pkg = JSON.parse(await readFile(resolve(__dirname, '..', 'package.json'), 'utf-8'))
+        console.log(pkg.version)
+        process.exit(0)
+        break
+      }
+      default:
+        if (arg.startsWith('-')) {
+          console.error(`Unknown option: ${arg}`)
+          printHelp()
+          process.exit(1)
+        } else if (!args.path) {
+          args.path = arg
         }
-        i++
+        break
     }
+    i++
+  }
 
-    return args
+  return args
 }
 
 async function main() {
-    const args = await parseArgs(process.argv.slice(2))
+  const args = await parseArgs(process.argv.slice(2))
 
-    if (!args.path) {
-        console.error('Error: -p <path> is required\n')
-        printHelp()
-        process.exit(1)
+  if (!args.path) {
+    console.error('Error: -p <path> is required\n')
+    printHelp()
+    process.exit(1)
+  }
+
+  const filePath = resolve(args.path)
+  const rows: object[] = []
+
+  const reader = sheetToJson({
+    path: filePath,
+    encoding: args.encoding,
+    headers: args.headers,
+    includeFirstRow: args.includeFirstRow,
+    maxRows: args.maxRows,
+  })
+
+  process.on('SIGINT', () => {
+    reader.destroy()
+    process.exit(0)
+  })
+
+  reader.on('row', ({ row }) => {
+    if (args.output) {
+      rows.push(row)
+    } else {
+      process.stdout.write(JSON.stringify(row) + '\n')
     }
+  })
 
-    const filePath = resolve(args.path)
-    const rows: object[] = []
+  reader.on('error', (err: Error) => {
+    console.error('Error:', err.message)
+    process.exit(1)
+  })
 
-    const reader = sheetToJson({
-        path: filePath,
-        encoding: args.encoding,
-        headers: args.headers,
-        includeFirstRow: args.includeFirstRow,
-        maxRows: args.maxRows,
-    })
+  reader.on('end', async () => {
+    if (args.output) {
+      const outputPath = resolve(args.output)
+      await writeFile(outputPath, JSON.stringify(rows, null, 2), 'utf-8')
+      console.log(`Written ${rows.length} rows to ${outputPath}`)
+    }
+  })
 
-    process.on('SIGINT', () => {
-        reader.destroy()
-        process.exit(0)
-    })
-
-    reader.on('row', ({ row }) => {
-        if (args.output) {
-            rows.push(row)
-        } else {
-            process.stdout.write(JSON.stringify(row) + '\n')
-        }
-    })
-
-    reader.on('error', (err: Error) => {
-        console.error('Error:', err.message)
-        process.exit(1)
-    })
-
-    reader.on('end', async () => {
-        if (args.output) {
-            const outputPath = resolve(args.output)
-            await writeFile(outputPath, JSON.stringify(rows, null, 2), 'utf-8')
-            console.log(`Written ${rows.length} rows to ${outputPath}`)
-        }
-    })
-
-    reader.start()
+  reader.start()
 }
 
 main()

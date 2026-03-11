@@ -5,6 +5,7 @@ import ExcelJs from 'exceljs'
 
 import { Events } from './Events.interface'
 import { createInterface } from 'node:readline'
+import { RowMapper } from './mapper.interface'
 
 const FILE_TYPES = {
   EXCEL: 'EXCEL',
@@ -67,8 +68,28 @@ export class SheetReader extends EventEmitter {
    */
   private reader: ReadStream
 
+  /**
+   * A boolean indicating whether the reader is currently paused. This is used to control the flow of data when reading from the file, allowing the reader to be paused and resumed as needed.
+   * @private
+   * @property {boolean} _paused
+   */
   private _paused = false
+
+  /**
+   * A function that resolves the promise used to pause the reader. This is set when the reader is paused and is called when the reader is resumed to allow the reading process to continue.
+   * @private
+   * @property {(() => void) | null} _resumeResolve
+   */
   private _resumeResolve: (() => void) | null = null
+
+
+  /**
+   * An optional function that takes a row object and returns a transformed version of that object. This allows you to modify the data as it's being read, such as changing property names, filtering out certain properties, or transforming values.
+   * @private
+   * @property {RowMapper[] | undefined} mappers
+   */
+  private mappers?: RowMapper[]
+
 
   /**
    *  Validates the provided file path. Throws an error if the path is invalid or the file does not exist.
@@ -85,17 +106,20 @@ export class SheetReader extends EventEmitter {
     }
   }
 
+
   /**
    * Reads a CSV file line by line using the readline module.
    * @private
    */
   private async readCsv() {
+
     const rl = createInterface({ input: this.reader, crlfDelay: Infinity })
     const sheetName = this.getFileName()
 
     let rowNumber = 0
     let headers: string[] = []
     let isHeaderSet = false
+    let mapper: RowMapper | undefined = this.mappers ? this.mappers[0] : undefined
 
     for await (const line of rl) {
       if (this._paused) {
@@ -115,7 +139,7 @@ export class SheetReader extends EventEmitter {
         continue
       }
 
-      this.emit('row', { row: this.mapRow({ values, headers, isCsv: true }), sheetName, rowNumber })
+      this.emit('row', { row: this.mapRow({ values, headers, isCsv: true, mapper }), sheetName, rowNumber })
       this._emittedRows++
 
       if (this.maxRows && this._emittedRows >= this.maxRows) {
@@ -124,6 +148,7 @@ export class SheetReader extends EventEmitter {
       }
     }
   }
+
 
   /**
    * Parses a line from a CSV file into an array of fields.
@@ -136,6 +161,7 @@ export class SheetReader extends EventEmitter {
       return field.startsWith('"') ? field.slice(1, -1).replace(/""/g, '"') : field
     })
   }
+
 
   /**
    * Reads an Excel file using the exceljs library. Emits a 'row' event for each row read from the sheet, providing the row data and the sheet name.
@@ -151,8 +177,11 @@ export class SheetReader extends EventEmitter {
     })
 
     let workBookNumber = 0
+    let mapper: RowMapper | undefined = undefined
     for await (const worksheet of workBook) {
       workBookNumber++
+
+      mapper = this.mappers ? this.mappers[workBookNumber - 1] : undefined
 
       let headers: string[] = []
       let isHeaderSet = false
@@ -174,7 +203,7 @@ export class SheetReader extends EventEmitter {
         }
 
         this.emit('row', {
-          row: this.mapRow({ values: row.values as ExcelJs.CellValue[], headers }),
+          row: this.mapRow({ values: row.values as ExcelJs.CellValue[], headers, mapper }),
           sheetName: row.worksheet.name,
           rowNumber: row.number,
         })
@@ -198,12 +227,14 @@ export class SheetReader extends EventEmitter {
     values,
     headers,
     isCsv,
+    mapper,
   }: {
     values: ExcelJs.CellValue[]
     headers: string[]
     isCsv?: boolean
+    mapper?: RowMapper
   }) {
-    return values.reduce(
+    const mappedRow = values.reduce(
       (acc, value, index) => {
         if (!isCsv) acc[headers[index - 1] as string] = value
         else acc[headers[index] as string] = value
@@ -212,6 +243,8 @@ export class SheetReader extends EventEmitter {
       },
       {} as { [key: string]: ExcelJs.CellValue }
     )
+
+    return mapper ? mapper(mappedRow) : mappedRow
   }
 
   /**
@@ -240,6 +273,7 @@ export class SheetReader extends EventEmitter {
    * @param {Array<Array<string>>} [params.headers] - An optional array of strings representing the key names for the json object. This property is optional and if not provided, the rows will be emitted using the first row of the sheet as the keys for the json object. -- Is expected to be an array of arrays, where each inner array represents the headers for a specific sheet in the case of Excel files with multiple sheets.
    * @param {boolean} [params.includeFirstRow=false] - A boolean indicating whether to include the first row of the sheet as part of the emitted data. If set to `true`, the first row will be included in the emitted data; if set to `false`, the first row will be treated as headers and will not be included in the emitted data. Defaults to `false`.
    * @param {number} [params.maxRows] - The maximum number of data rows to read. If set, the reader will stop after emitting this many rows.
+   * @param {RowMapper[]} [params.mappers] - An optional array of functions that take a row object and return a transformed version of that object. This allows you to modify the data as it's being read, such as changing property names, filtering out certain properties, or transforming values. Each function in the array corresponds to a sheet in the case of Excel files with multiple sheets.
    * @throws {Error} Will throw an error if the file path is not provided or if the file does not exist.
    */
   constructor({
@@ -248,12 +282,14 @@ export class SheetReader extends EventEmitter {
     headers,
     includeFirstRow,
     maxRows,
+    mappers,
   }: {
     path: string
     encoding?: BufferEncoding
     headers?: Array<Array<string>>
     includeFirstRow?: boolean
     maxRows?: number
+    mappers?: RowMapper[]
   }) {
     super()
     this.path = path
@@ -263,6 +299,7 @@ export class SheetReader extends EventEmitter {
     this.headers = headers
     this.includeFirstRow = includeFirstRow || false
     this.maxRows = maxRows
+    this.mappers = mappers
   }
 
   /**
