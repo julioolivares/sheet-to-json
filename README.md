@@ -40,13 +40,14 @@ import { sheetToJson, ExcelUtils, RowEvent, EndEvent, ErrorEvent } from 'sheet-t
 
 Creates a streaming reader for the given file and returns a `SheetReader` instance.
 
-| Parameter         | Type             | Default   | Description                                                                     |
-| ----------------- | ---------------- | --------- | ------------------------------------------------------------------------------- |
-| `path`            | `string`         | —         | **(required)** Path to a `.csv` or `.xlsx` file.                                |
-| `encoding`        | `BufferEncoding` | `'utf-8'` | Character encoding (CSV only).                                                  |
-| `headers`         | `string[][]`     | —         | Custom header names. If omitted, the first row of each sheet is used as keys.   |
-| `includeFirstRow` | `boolean`        | `false`   | When `true`, the first row is emitted as data instead of being used as headers. |
-| `maxRows`         | `number`         | —         | Stop reading after emitting this many data rows.                                |
+| Parameter         | Type             | Default   | Description                                                                                                                                  |
+| ----------------- | ---------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `path`            | `string`         | —         | **(required)** Path to a `.csv` or `.xlsx` file.                                                                                             |
+| `encoding`        | `BufferEncoding` | `'utf-8'` | Character encoding (CSV only).                                                                                                               |
+| `headers`         | `string[][]`     | —         | Custom header names. If omitted, the first row of each sheet is used as keys.                                                                |
+| `includeFirstRow` | `boolean`        | `false`   | When `true`, the first row is emitted as data instead of being used as headers.                                                              |
+| `maxRows`         | `number`         | —         | Stop reading after emitting this many data rows.                                                                                             |
+| `mappers`         | `Function[]`     | —         | Optional row transformers that reshape each emitted row. For CSV, the first mapper is used. For Excel, each mapper matches a sheet by index. |
 
 **Returns** a `SheetReader` (extends `EventEmitter`) with these methods and events:
 
@@ -212,6 +213,43 @@ reader.on('end', () => {
 reader.start()
 ```
 
+### Transform rows with `mappers`
+
+Use a mapper to convert the raw row shape into the object your app actually needs.
+
+```ts
+import { sheetToJson } from 'sheet-to-json'
+
+interface UserRow {
+  id: number
+  name: string
+  lastName: string
+}
+
+const reader = sheetToJson({
+  path: './users.csv',
+  headers: [['a', 'b', 'c', 'd', 'e', 'f']],
+  mappers: [
+    (row: { a: string; b: string; c: string; d: string; e: string; f: string }): UserRow => ({
+      id: Number(row.a),
+      name: row.b,
+      lastName: row.c,
+    }),
+  ],
+})
+
+reader.on('row', ({ row }) => {
+  // row is now: { id, name, lastName }
+  console.log(row)
+})
+
+reader.start()
+```
+
+reader.start()
+
+````
+
 ### Convert Excel serial dates
 
 ```ts
@@ -219,7 +257,7 @@ import { ExcelUtils } from 'sheet-to-json'
 
 const date = ExcelUtils.excelSerialToDate(44927)
 console.log(date.toISOString()) // "2023-01-01T00:00:00.000Z"
-```
+````
 
 ---
 
