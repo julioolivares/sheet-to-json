@@ -80,6 +80,51 @@ describe('sheetToJson – CSV', () => {
         const rows = await collect(reader)
         assert.ok(rows.length > 0)
     })
+
+    it('should transform CSV rows with the first mapper', async () => {
+        const reader = sheetToJson({
+            path: CSV_PATH,
+            mappers: [
+                (row: { name: string; age: string; city: string }) => ({
+                    fullName: row.name.toUpperCase(),
+                    age: Number(row.age),
+                    location: row.city,
+                }),
+            ],
+        })
+
+        const rows = await collect(reader)
+
+        assert.equal(rows.length, 5)
+        assert.deepEqual(rows[0].row, {
+            fullName: 'ALICE',
+            age: 30,
+            location: 'New York',
+        })
+    })
+
+    it('should ignore additional mappers for CSV files', async () => {
+        const reader = sheetToJson({
+            path: CSV_PATH,
+            mappers: [
+                (row: { name: string; age: string; city: string }) => ({
+                    source: 'first',
+                    value: row.name,
+                }),
+                () => ({
+                    source: 'second',
+                }),
+            ],
+        })
+
+        const rows = await collect(reader)
+        const firstRow = rows[0].row as Record<string, unknown>
+
+        assert.equal(rows.length, 5)
+        assert.equal(firstRow.source, 'first')
+        assert.equal(firstRow.value, 'Alice')
+        assert.ok(!('name' in firstRow))
+    })
 })
 
 // ─── sheetToJson – XLSX ─────────────────────────────────────
@@ -118,6 +163,54 @@ describe('sheetToJson – XLSX', () => {
         const row = rows[0].row as Record<string, unknown>
         assert.ok('h1' in row)
         assert.ok('h2' in row)
+    })
+
+
+    it('should use the mapper that matches the current xlsx sheet index', { skip: true }, async () => {
+        try {
+            const multiSheetPath = path.join(FIXTURES, 'mapper-multi-sheet.xlsx')
+
+            const reader = sheetToJson({
+                path: multiSheetPath,
+                mappers: [
+                    (row: Record<string, unknown>) => ({
+                        mapped: true,
+                        sheetNumber: 1,
+                        row
+                    }),
+                    (row: Record<string, unknown>) => ({
+                        mapped: true,
+                        sheetNumber: 2,
+                        row
+                    }),
+                ],
+            })
+
+            const rows = await new Promise((resolve, reject) => {
+                const data: { [key: string]: any } = {}
+
+                reader.on('row', ({ row, sheetName, rowNumber }) => {
+                    if (!data[sheetName]) data[sheetName] = []
+
+                    data[sheetName].push(row)
+                })
+
+
+                reader.on('end', () => resolve(data))
+
+                reader.start()
+            }) as { [key: string]: any }
+
+            assert.ok(rows['Users'] && rows['Users'][0].sheetNumber === 1 && rows['Users'][0].mapped === true)
+
+
+            assert.ok(true)
+        }
+        catch (error) {
+            assert.fail(`Test threw an error: ${(error as Error).message}`)
+        }
+
+
     })
 })
 

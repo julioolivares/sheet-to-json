@@ -102,7 +102,7 @@ export class SheetReader extends EventEmitter {
     }
 
     if (!existsSync(path)) {
-      throw new Error('File does not exist')
+      throw new Error(`File does not exist: ${path}`)
     }
   }
 
@@ -320,11 +320,11 @@ export class SheetReader extends EventEmitter {
           ? createReadStream(this.path)
           : createReadStream(this.path, { encoding: this.encoding })
 
-      if (this.fileType === 'EXCEL') {
-        this.readExcel()
-      } else {
-        this.readCsv()
-      }
+      // Run the async read method in the background and catch errors
+      const readPromise = this.fileType === 'EXCEL'
+        ? this.readExcel()
+        : this.readCsv()
+      readPromise.catch((error) => this.emit('error', error))
 
       this.reader.on('end', () => {
         this.emit('end')
