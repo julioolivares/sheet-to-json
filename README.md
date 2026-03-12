@@ -2,7 +2,13 @@
 
 A streaming library that converts Excel (.xlsx) and CSV files into JSON objects — row by row, sheet by sheet. It streams the file and emits each row as a plain JavaScript object via events, so it can handle large files without loading everything into memory. It also ships with a CLI for quick conversions from the terminal.
 
----
+## Table of Contents
+
+- [📦 Installation](#-installation)
+- [🔌 API](#-api)
+- [💻 CLI](#-cli)
+- [🚀 Usage examples](#-usage-examples)
+- [📄 License](#-license)
 
 ## 📦 Installation
 
