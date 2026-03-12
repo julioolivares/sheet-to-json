@@ -1,7 +1,7 @@
 {
   "name": "sheet-to-json",
   "version": "1.0.0",
-  "description": "Event-driven streaming library to convert Excel (.xlsx) and CSV files into JSON objects row by row, with pause/resume/destroy flow control. Built for large files.",
+  "description": "A streaming library that converts Excel (.xlsx) and CSV files into JSON objects — row by row, sheet by sheet. It streams the file and emits each row as a plain JavaScript object via events, so it can handle large files without loading everything into memory. It also ships with a CLI for quick conversions from the terminal.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -24,11 +24,11 @@
     "postpublish": "git push --follow-tags"
   },
   "keywords": [
+    "sheet-to-json",
     "excel",
     "csv",
     "xlsx",
     "json",
-    "sheet-to-json",
     "excel-to-json",
     "csv-to-json",
     "streaming",
