@@ -53,6 +53,7 @@ Creates a streaming reader for the given file and returns a `SheetReader` instan
 | `headers`         | `string[][]`     | —         | Custom header names. If omitted, the first row of each sheet is used as keys.                                                                |
 | `includeFirstRow` | `boolean`        | `false`   | When `true`, the first row is emitted as data instead of being used as headers.                                                              |
 | `maxRows`         | `number`         | —         | Stop reading after emitting this many data rows.                                                                                             |
+| `sheetName`       | `string`         | —         | Read only the sheet with this name (Excel only). If omitted, all sheets are read.                                                            |
 | `mappers`         | `Function[]`     | —         | Optional row transformers that reshape each emitted row. For CSV, the first mapper is used. For Excel, each mapper matches a sheet by index. |
 
 **Returns** a `SheetReader` (extends `EventEmitter`) with these methods and events:
@@ -252,10 +253,6 @@ reader.on('row', ({ row }) => {
 reader.start()
 ```
 
-reader.start()
-
-````
-
 ### Convert Excel serial dates
 
 ```ts
@@ -263,7 +260,7 @@ import { ExcelUtils } from 'sheet-to-json'
 
 const date = ExcelUtils.excelSerialToDate(44927)
 console.log(date.toISOString()) // "2023-01-01T00:00:00.000Z"
-````
+```
 
 ---
 
