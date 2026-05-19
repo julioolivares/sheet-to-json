@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { sheetToJson } from './'
+import { sheetToJson } from './index'
 
 const BATCH_SIZE = 25000
 
@@ -22,32 +22,37 @@ readerXlsx.on('end', () => {
 readerXlsx.start() */
 
 interface TargetMapper {
-  id: number,
+  id: number
   name: string
   lastName: string
 }
-// Make instance of SheetReader and start reading the file for CSV
-const readerCsv = sheetToJson({
-  path: path.resolve(process.cwd(), 'resources', 'large_data_set.csv'),
-  headers: [['a', 'b', 'c', 'd', 'e', 'f']],
-  mappers: [(row: { a: string, b: string, c: string, d: string, e: string, f: string }): TargetMapper => {
-    return {
-      id: Number(row.a),
-      name: row.b,
-      lastName: row.c
-    }
-  }]
-})
 
-readerCsv.on('row', ({ row, sheetName, rowNumber }) => {
-  console.log(JSON.stringify({ rowNumber, sheetName, row }, null, 2))
+try {
+  // Make instance of SheetReader and start reading the file for CSV
+  const readerCsv = sheetToJson({
+    path: path.resolve(process.cwd(), 'tests', 'fixtures', 'Carga - Detalle lista de precio.xlsx'),
+    headers: [['codCobertura', 'descripcion', 'precio', 'activo']],
+    encoding: 'utf-8',
+    includeFirstRow: false,
+    maxRows: 1000, // Arbitrary limit to prevent excessively large files from being processed
+  })
 
-  /* if (rowNumber > 10) readerCsv.destroy() */
-})
+  readerCsv.on('row', ({ row, sheetName, rowNumber }) => {
+    console.log(JSON.stringify({ rowNumber, sheetName, row }, null, 2))
 
-readerCsv.on('end', () => {
-  console.log('Finished reading the file')
-})
+    /* if (rowNumber > 10) readerCsv.destroy() */
+  })
 
-// Start the reader
-readerCsv.start()
+  readerCsv.on('end', () => {
+    console.log('Finished reading the file')
+  })
+
+  readerCsv.on('error', (error) => {
+    console.error('Error reading the file:', error)
+  })
+
+  // Start the reader
+  readerCsv.start()
+} catch (err) {
+  console.error('Error:', err)
+}

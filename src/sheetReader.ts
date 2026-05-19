@@ -83,6 +83,13 @@ export class SheetReader extends EventEmitter {
   private _resumeResolve: (() => void) | null = null
 
   /**
+   * An optional sheet name to filter which sheet is read in Excel files. If provided, only the sheet with this name will be emitted.
+   * @private
+   * @property {string | undefined} sheetName
+   */
+  private sheetName?: string
+
+  /**
    * An optional function that takes a row object and returns a transformed version of that object. This allows you to modify the data as it's being read, such as changing property names, filtering out certain properties, or transforming values.
    * @private
    * @property {RowMapper[] | undefined} mappers
@@ -177,6 +184,8 @@ export class SheetReader extends EventEmitter {
     let workBookNumber = 0
     let mapper: RowMapper | undefined = undefined
     for await (const worksheet of workBook) {
+      if (this.sheetName && (worksheet as unknown as { name: string }).name !== this.sheetName) continue
+
       workBookNumber++
 
       mapper = this.mappers ? this.mappers[workBookNumber - 1] : undefined
@@ -280,6 +289,7 @@ export class SheetReader extends EventEmitter {
     headers,
     includeFirstRow,
     maxRows,
+    sheetName,
     mappers,
   }: {
     path: string
@@ -287,6 +297,7 @@ export class SheetReader extends EventEmitter {
     headers?: Array<Array<string>>
     includeFirstRow?: boolean
     maxRows?: number
+    sheetName?: string
     mappers?: RowMapper[]
   }) {
     super()
@@ -297,6 +308,7 @@ export class SheetReader extends EventEmitter {
     this.headers = headers
     this.includeFirstRow = includeFirstRow || false
     this.maxRows = maxRows
+    this.sheetName = sheetName
     this.mappers = mappers
   }
 

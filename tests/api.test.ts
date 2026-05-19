@@ -165,6 +165,27 @@ describe('sheetToJson – XLSX', () => {
         assert.ok('h2' in row)
     })
 
+    it('should only emit rows from the specified sheetName', async () => {
+        const reader = sheetToJson({ path: XLSX_PATH, sheetName: 'Data sheet', maxRows: 3 })
+        const rows = await collect(reader)
+
+        assert.ok(rows.length > 0)
+        assert.ok(rows.every(r => r.sheetName === 'Data sheet'))
+    })
+
+    it('should emit no rows when sheetName does not match any sheet', async () => {
+        const reader = sheetToJson({ path: XLSX_PATH, sheetName: 'Nonexistent Sheet' })
+        const rows = await collect(reader)
+
+        assert.equal(rows.length, 0)
+    })
+
+    it('should skip other sheets when sheetName is provided', async () => {
+        const reader = sheetToJson({ path: XLSX_PATH, sheetName: 'Second sheet', maxRows: 3 })
+        const rows = await collect(reader)
+
+        assert.ok(rows.every(r => r.sheetName === 'Second sheet'))
+    })
 
     it('should use the mapper that matches the current xlsx sheet index', { skip: true }, async () => {
         try {

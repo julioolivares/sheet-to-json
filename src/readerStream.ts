@@ -9,6 +9,7 @@ import { SheetReader } from './sheetReader'
  * @param {boolean} [params.includeFirstRow=false] - A boolean indicating whether to include the first row of the sheet in the emitted rows. This property is optional and defaults to false. If set to true, the first row will be included in the emitted rows; if set to false, the first row will be treated as headers and will not be included in the emitted rows.
  * @param {number} [params.maxRows] - The maximum number of data rows to read. If set, the reader will stop after emitting this many rows.
  * @param {RowMapper[]} [params.mappers] - An optional array of functions that take a row object and return a transformed version of that object. This allows you to modify the data as it's being read, such as changing property names, filtering out certain properties, or transforming values. Each function in the array corresponds to a sheet in the case of Excel files with multiple sheets.
+ * @param {string} [params.sheetName] - An optional sheet name to filter which sheet is read in Excel files. If provided, only rows from the sheet with this name will be emitted.
  * @returns {SheetReader} A SheetReader instance that emits 'row' events as data is read from the file. The SheetReader instance can be paused and resumed using its pause() and resume() methods, respectively.
  * @throws {Error} Will throw an error if the file path is not provided or if the file does not exist.
  */
@@ -18,6 +19,7 @@ export const sheetToJson = ({
   headers,
   includeFirstRow,
   maxRows,
+  sheetName,
   mappers,
 }: {
   path: string
@@ -25,7 +27,8 @@ export const sheetToJson = ({
   headers?: Array<Array<string>>
   includeFirstRow?: boolean
   maxRows?: number
+  sheetName?: string
   mappers?: RowMapper[]
 }): SheetReader => {
-  return new SheetReader({ path, encoding, headers, includeFirstRow, maxRows, mappers })
+  return new SheetReader({ path, encoding, headers, includeFirstRow, maxRows, sheetName, mappers })
 }
