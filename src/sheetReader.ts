@@ -66,7 +66,7 @@ export class SheetReader extends EventEmitter {
    * @private
    * @property {ReadStream} reader - The read stream used to read the file. This stream is created based on the file type and is used to emit 'row' events as data is read from the file.
    */
-  private reader: ReadStream
+  private reader?: ReadStream
 
   /**
    * A boolean indicating whether the reader is currently paused. This is used to control the flow of data when reading from the file, allowing the reader to be paused and resumed as needed.
@@ -82,14 +82,12 @@ export class SheetReader extends EventEmitter {
    */
   private _resumeResolve: (() => void) | null = null
 
-
   /**
    * An optional function that takes a row object and returns a transformed version of that object. This allows you to modify the data as it's being read, such as changing property names, filtering out certain properties, or transforming values.
    * @private
    * @property {RowMapper[] | undefined} mappers
    */
   private mappers?: RowMapper[]
-
 
   /**
    *  Validates the provided file path. Throws an error if the path is invalid or the file does not exist.
@@ -106,14 +104,12 @@ export class SheetReader extends EventEmitter {
     }
   }
 
-
   /**
    * Reads a CSV file line by line using the readline module.
    * @private
    */
   private async readCsv() {
-
-    const rl = createInterface({ input: this.reader, crlfDelay: Infinity })
+    const rl = createInterface({ input: this.reader!, crlfDelay: Infinity })
     const sheetName = this.getFileName()
 
     let rowNumber = 0
@@ -139,7 +135,11 @@ export class SheetReader extends EventEmitter {
         continue
       }
 
-      this.emit('row', { row: this.mapRow({ values, headers, isCsv: true, mapper }), sheetName, rowNumber })
+      this.emit('row', {
+        row: this.mapRow({ values, headers, isCsv: true, mapper }),
+        sheetName,
+        rowNumber,
+      })
       this._emittedRows++
 
       if (this.maxRows && this._emittedRows >= this.maxRows) {
@@ -148,7 +148,6 @@ export class SheetReader extends EventEmitter {
       }
     }
   }
-
 
   /**
    * Parses a line from a CSV file into an array of fields.
@@ -161,7 +160,6 @@ export class SheetReader extends EventEmitter {
       return field.startsWith('"') ? field.slice(1, -1).replace(/""/g, '"') : field
     })
   }
-
 
   /**
    * Reads an Excel file using the exceljs library. Emits a 'row' event for each row read from the sheet, providing the row data and the sheet name.
@@ -315,24 +313,23 @@ export class SheetReader extends EventEmitter {
         )
       }
 
-      this.reader =
-        this.fileType === 'EXCEL'
-          ? createReadStream(this.path)
-          : createReadStream(this.path, { encoding: this.encoding })
+      if (this.fileType === 'EXCEL') {
+        // ExcelJS reads directly from this.path; no ReadStream needed
+        this.readExcel()
+          .then(() => this.emit('end'))
+          .catch((error) => this.emit('error', error))
+      } else {
+        this.reader = createReadStream(this.path, { encoding: this.encoding })
+        this.readCsv().catch((error) => this.emit('error', error))
 
-      // Run the async read method in the background and catch errors
-      const readPromise = this.fileType === 'EXCEL'
-        ? this.readExcel()
-        : this.readCsv()
-      readPromise.catch((error) => this.emit('error', error))
+        this.reader.on('end', () => {
+          this.emit('end')
+        })
 
-      this.reader.on('end', () => {
-        this.emit('end')
-      })
-
-      this.reader.on('error', (error) => {
-        this.emit('error', error)
-      })
+        this.reader.on('error', (error) => {
+          this.emit('error', error)
+        })
+      }
     } catch (error) {
       this.emit('error', error as Error)
     } finally {
@@ -384,10 +381,10 @@ export class SheetReader extends EventEmitter {
    * @public
    */
   public destroy(): void {
+    this.pause()
     if (this.reader) {
-      this.pause()
       this.reader.destroy()
-      this.reader.emit('end')
     }
+    this.emit('end')
   }
 }
