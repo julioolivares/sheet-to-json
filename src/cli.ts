@@ -10,6 +10,7 @@ interface CliArgs {
   includeFirstRow: boolean
   output?: string
   maxRows?: number
+  sheetName?: string
 }
 
 function printHelp(): void {
@@ -25,6 +26,7 @@ function printHelp(): void {
     -h, --headers          Comma-separated list of header names
     -i, --include-first    Include first row as data (default: false)
     -n, --number-rows      Maximum number of rows to read
+    -s, --sheet-name       Read only the sheet with this name (Excel only)
     -o, --output           Output file path (.json). If omitted, prints to stdout
     --help                 Show this help message
     --version              Show version
@@ -64,6 +66,10 @@ async function parseArgs(argv: string[]): Promise<CliArgs> {
       case '-n':
       case '--number-rows':
         args.maxRows = parseInt(argv[++i], 10)
+        break
+      case '-s':
+      case '--sheet-name':
+        args.sheetName = argv[++i]
         break
       case '-o':
       case '--output':
@@ -114,6 +120,7 @@ async function main() {
     headers: args.headers,
     includeFirstRow: args.includeFirstRow,
     maxRows: args.maxRows,
+    sheetName: args.sheetName,
   })
 
   process.on('SIGINT', () => {

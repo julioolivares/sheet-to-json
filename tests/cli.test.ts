@@ -206,6 +206,36 @@ describe('CLI – XLSX', () => {
 
         unlinkSync(OUTPUT)
     })
+
+    it('should filter by sheet with -s', async () => {
+        const { stdout, code } = await run([XLSX_PATH, '-s', 'Data sheet', '-n', '3', '-o', OUTPUT])
+        assert.equal(code, 0)
+        assert.ok(stdout.includes('Written 3 rows'))
+
+        const content = JSON.parse(await readFile(OUTPUT, 'utf-8'))
+        assert.equal(content.length, 3)
+
+        unlinkSync(OUTPUT)
+    })
+
+    it('should filter by sheet with --sheet-name', async () => {
+        const { stdout, code } = await run([XLSX_PATH, '--sheet-name', 'Second sheet', '-n', '2', '-o', OUTPUT])
+        assert.equal(code, 0)
+        assert.ok(stdout.includes('Written 2 rows'))
+
+        const content = JSON.parse(await readFile(OUTPUT, 'utf-8'))
+        assert.equal(content.length, 2)
+
+        unlinkSync(OUTPUT)
+    })
+
+    it('should output 0 rows when sheet name does not match', async () => {
+        const { stdout, code } = await run([XLSX_PATH, '-s', 'Nonexistent', '-o', OUTPUT])
+        assert.equal(code, 0)
+        assert.ok(stdout.includes('Written 0 rows'))
+
+        unlinkSync(OUTPUT)
+    })
 })
 
 // ─── CLI – error handling ───────────────────────────────────

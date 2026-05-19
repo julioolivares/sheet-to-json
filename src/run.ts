@@ -30,7 +30,7 @@ interface TargetMapper {
 try {
   // Make instance of SheetReader and start reading the file for CSV
   const readerCsv = sheetToJson({
-    path: path.resolve(process.cwd(), 'tests', 'fixtures', 'Carga - Detalle lista de precio.xlsx'),
+    path: path.resolve(process.cwd(), 'tests', 'fixtures', 'mapper-multi-sheet.xlsx'),
     headers: [['codCobertura', 'descripcion', 'precio', 'activo']],
     encoding: 'utf-8',
     includeFirstRow: false,

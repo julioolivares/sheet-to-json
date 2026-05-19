@@ -102,6 +102,7 @@ sheet-to-json <file> [options]
 | `-h` | `--headers`       | Comma-separated list of header names (e.g. `"id,name,email"`).         |
 | `-i` | `--include-first` | Treat the first row as data, not headers.                              |
 | `-n` | `--number-rows`   | Maximum number of rows to read.                                        |
+| `-s` | `--sheet-name`    | Read only the sheet with this name (Excel only).                       |
 | `-o` | `--output`        | Write output to a `.json` file instead of stdout.                      |
 |      | `--help`          | Show the help message.                                                 |
 |      | `--version`       | Print the package version.                                             |
@@ -120,6 +121,9 @@ sheet-to-json data.csv -h "id,name,email" -i
 
 # Read only the first 100 rows
 sheet-to-json data.csv -n 100
+
+# Read a specific sheet from an Excel file
+sheet-to-json report.xlsx -s "Data sheet" -o data.json
 
 # Combine options
 sheet-to-json data.csv -h "id,name,email" -i -n 500 -o output.json
